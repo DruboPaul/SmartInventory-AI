@@ -18,5 +18,5 @@ chromadb
 tiktoken
 
 # UI
-gradio
+gradio>=4.44.1
 pandas
