@@ -1395,8 +1395,7 @@ Ready for your command..."""}
                     label=None,
                     show_label=False,
                     avatar_images=(None, "https://api.dicebear.com/7.x/bottts/svg?seed=InventoryAI"),
-                    layout="bubble",
-                    height=550
+                    layout="bubble"
                 )
                 
                 # Message Input Area
