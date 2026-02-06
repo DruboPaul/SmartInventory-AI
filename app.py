@@ -1322,7 +1322,6 @@ with gr.Blocks(title="SmartInventory AI") as demo:
         modal_viewer = gr.Dataframe(
             value=get_inventory_df(),
             interactive=False,
-            max_height=600,
             wrap=True,
             elem_id="inventory-dataframe"
         )
