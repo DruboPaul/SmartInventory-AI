@@ -1306,7 +1306,7 @@ function refresh() {
 }
 """
 
-with gr.Blocks(title="SmartInventory AI") as demo:
+with gr.Blocks(title="SmartInventory AI", css=custom_css, js=js_func, theme=gr.themes.Base()) as demo:
     # Pagination State
     current_page = gr.State(0)
     
@@ -1714,8 +1714,5 @@ if __name__ == "__main__":
     demo.launch(
         share=False, 
         server_name="0.0.0.0", 
-        server_port=7860, 
-        css=custom_css, 
-        js=js_func,
-        theme=gr.themes.Base()
+        server_port=7860
     )
