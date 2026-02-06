@@ -588,9 +588,8 @@ def respond(message, history):
         return "", history
         
     bot_message = process_message(message, history)
-    # Gradio 6.x uses message format with role/content
-    history.append({"role": "user", "content": message})
-    history.append({"role": "assistant", "content": bot_message})
+    # Legacy/Standard Gradio Tuple format
+    history.append([message, bot_message])
     return "", history
 
 def forward_last_message(history, token, chat_id):
@@ -600,10 +599,12 @@ def forward_last_message(history, token, chat_id):
     
     # Find the last assistant message
     last_assistant_msg = None
-    for msg in reversed(history):
-        if msg.get("role") == "assistant":
-            last_assistant_msg = msg.get("content")
-            break
+    for pair in reversed(history):
+        # pair is usually [user_msg, bot_msg]
+        if isinstance(pair, (list, tuple)) and len(pair) > 1:
+            if pair[1]: # Check if bot message exists
+                last_assistant_msg = pair[1]
+                break
             
     if not last_assistant_msg:
         return "⚠️ No AI response found to forward."
@@ -1351,14 +1352,14 @@ with gr.Blocks(title="SmartInventory AI", css=custom_css, js=js_func, theme=gr.t
     # --- Main Control Center View ---
     with gr.Column(visible=True) as main_view_container:
         initial_message = [
-            {"role": "assistant", "content": """[System initialized - Supply chain monitoring active]
+            [None, """[System initialized - Supply chain monitoring active]
 
 Analyzing inventory levels across 47 warehouses...
 • Low stock items: 12 products require attention
 • Supplier delivery status: 3 shipments in transit
 • Demand forecasting updated for Q1 2026
 
-Ready for your command..."""}
+Ready for your command..."""]
         ]
         
         # Header
@@ -1392,7 +1393,6 @@ Ready for your command..."""}
                 chatbot = gr.Chatbot(
                     value=initial_message,
                     elem_id="chatbot",
-                    type="messages",
                     label=None,
                     show_label=False,
                     avatar_images=(None, "https://api.dicebear.com/7.x/bottts/svg?seed=InventoryAI")
