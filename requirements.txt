@@ -16,6 +16,7 @@ pydantic
 # Vector DB (for RAG)
 chromadb
 tiktoken
+huggingface-hub<0.25.0
 
 # UI
 gradio>=4.44.1
