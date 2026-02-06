@@ -1,3 +1,15 @@
+---
+title: SmartInventory AI
+emoji: 📦
+colorFrom: blue
+colorTo: indigo
+sdk: gradio
+sdk_version: 4.19.1
+app_file: app.py
+pinned: false
+license: apache-2.0
+---
+
 # 🧠 SmartInventory AI
 
 > **Real-Time Inventory Alerting System & AI Chihbot Assistant**
