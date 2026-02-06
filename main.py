@@ -19,15 +19,32 @@ import os
 import requests
 from datetime import datetime
 
-# In-memory stock tracker (In production, use Firestore or Redis)
-# This simulates stock levels - in reality, you'd query a database
-STOCK_LEVELS = {
-    "SKU001": 50,  # Red T-Shirt
-    "SKU002": 30,  # Blue Jeans
-    "SKU003": 20,  # White Sneakers
-    "SKU004": 15,  # Black Dress
-    "SKU005": 10,  # Winter Jacket
-}
+# Stock Levels (Dynamically loaded from knowledge base)
+STOCK_LEVELS = {}
+
+def load_stock_levels():
+    """Load current stock levels from shared knowledge base."""
+    global STOCK_LEVELS
+    kb_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "knowledge_base/products.json")
+    
+    # Defaults
+    STOCK_LEVELS = {
+        "SKU001": 50, "SKU002": 30, "SKU003": 20, "SKU004": 15, "SKU005": 10,
+    }
+
+    if os.path.exists(kb_path):
+        try:
+            with open(kb_path, "r") as f:
+                data = json.load(f)
+            new_levels = {p["id"]: p.get("stock", 0) for p in data.get("products", [])}
+            if new_levels:
+                STOCK_LEVELS = new_levels
+                print(f"✅ Alert System synchronized: {len(STOCK_LEVELS)} items tracked.")
+        except Exception as e:
+            print(f"⚠️ Error syncing Alert System: {e}")
+
+# Initial load
+load_stock_levels()
 
 # Thresholds
 HIGH_VALUE_THRESHOLD = float(os.environ.get("HIGH_VALUE_THRESHOLD", 120))

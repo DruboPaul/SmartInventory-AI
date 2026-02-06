@@ -23,14 +23,15 @@ import os
 import json
 from typing import List, Dict, Optional
 from pathlib import Path
+import shutil
 
 # LangChain imports
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain.prompts import ChatPromptTemplate
-from langchain.schema import Document
+from langchain_classic.prompts import ChatPromptTemplate
+from langchain_classic.schema import Document
 from langchain_community.vectorstores import Chroma
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_classic.chains import RetrievalQA
 
 
 class InventoryRAGEngine:
@@ -238,6 +239,26 @@ Provide a helpful, actionable response focused on inventory management.
             ]
         
         return response
+
+    def reload(self):
+        """Reload and re-index the knowledge base."""
+        print("🔄 RAG Engine reloading...")
+        
+        # Clear existing vector store if it exists
+        if os.path.exists(self.persist_directory):
+            try:
+                shutil.rmtree(self.persist_directory)
+                print(f"🗑️ Cleared old vector store at {self.persist_directory}")
+            except Exception as e:
+                print(f"⚠️ Error clearing vector store: {e}")
+        
+        self.documents = []
+        if os.path.exists(self.knowledge_base_path):
+            self._load_knowledge_base()
+            self._create_vector_store()
+            print("✅ RAG Engine reload complete.")
+        else:
+            print(f"⚠️ Cannot reload: {self.knowledge_base_path} not found.")
     
     def get_product_context(self, product_id: str) -> str:
         """

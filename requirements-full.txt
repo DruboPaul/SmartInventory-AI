@@ -1,0 +1,35 @@
+# ============================================
+# SmartInventory AI - Full Requirements (Streaming + Chatbot)
+# ============================================
+
+# Google Cloud (for Streaming Alerts)
+google-cloud-pubsub==2.18.4
+google-cloud-bigquery==3.14.1
+google-cloud-storage==2.14.0
+functions-framework==3.5.0
+
+# HTTP Client
+requests==2.31.0
+
+# Utilities
+python-dotenv==1.0.0
+
+# ============================================
+# AI/ML Components (LangChain + RAG)
+# ============================================
+langchain==0.1.9
+langchain-openai==0.0.6
+langchain-community==0.0.24
+openai==1.12.0
+pydantic==2.6.1
+
+# Vector Database
+chromadb==0.4.22
+
+# Embeddings & NLP
+tiktoken==0.5.2
+
+# ============================================
+# UI / Chatbot
+# ============================================
+gradio==4.19.1

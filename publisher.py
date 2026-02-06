@@ -18,15 +18,38 @@ from datetime import datetime
 
 # Optional: Uncomment for actual GCP Pub/Sub publishing
 # from google.cloud import pubsub_v1
+import os
 
-# Configuration
-PRODUCT_CATALOG = [
-    {"id": "SKU001", "name": "Red T-Shirt", "category": "T-Shirt", "base_price": 29.99, "stock": 50},
-    {"id": "SKU002", "name": "Blue Jeans", "category": "Jeans", "base_price": 79.99, "stock": 30},
-    {"id": "SKU003", "name": "White Sneakers", "category": "Sneakers", "base_price": 129.99, "stock": 20},
-    {"id": "SKU004", "name": "Black Dress", "category": "Dress", "base_price": 99.99, "stock": 15},
-    {"id": "SKU005", "name": "Winter Jacket", "category": "Jacket", "base_price": 149.99, "stock": 10},
-]
+# Configuration (Dynamically loaded from knowledge base)
+PRODUCT_CATALOG = []
+
+def load_catalog():
+    """Load product catalog from shared knowledge base."""
+    global PRODUCT_CATALOG
+    kb_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "knowledge_base/products.json")
+    
+    # Defaults
+    PRODUCT_CATALOG = [
+        {"id": "SKU001", "name": "Red T-Shirt", "category": "T-Shirt", "base_price": 29.99},
+        {"id": "SKU002", "name": "Blue Jeans", "category": "Jeans", "base_price": 79.99},
+        {"id": "SKU003", "name": "White Sneakers", "category": "Sneakers", "base_price": 129.99},
+        {"id": "SKU004", "name": "Black Dress", "category": "Dress", "base_price": 99.99},
+        {"id": "SKU005", "name": "Winter Jacket", "category": "Jacket", "base_price": 149.99},
+    ]
+
+    if os.path.exists(kb_path):
+        try:
+            with open(kb_path, "r") as f:
+                data = json.load(f)
+            new_catalog = data.get("products", [])
+            if new_catalog:
+                PRODUCT_CATALOG = new_catalog
+                print(f"✅ Simulator synchronized: {len(PRODUCT_CATALOG)} products in catalog.")
+        except Exception as e:
+            print(f"⚠️ Error syncing Simulator: {e}")
+
+# Initial load
+load_catalog()
 
 STORES = ["Berlin_01", "Hamburg_02", "Munich_01", "Online_Store"]
 

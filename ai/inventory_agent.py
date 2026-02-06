@@ -21,16 +21,18 @@ Usage:
 """
 
 import os
+import json
 from datetime import datetime
 from typing import Dict, List, Optional
 
 # LangChain imports
 from langchain_openai import ChatOpenAI
-from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-from langchain.tools import Tool, StructuredTool
-from langchain.schema import SystemMessage, HumanMessage
+from langchain_classic.agents import AgentExecutor, create_openai_functions_agent
+from langchain_classic.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_classic.tools import Tool, StructuredTool
+from langchain_classic.schema import SystemMessage, HumanMessage
 from pydantic import BaseModel, Field
+from ai.rag_engine import InventoryRAGEngine
 
 
 # Tool Input Schemas
@@ -59,86 +61,62 @@ class InventoryAgent:
     and provide comprehensive recommendations.
     """
     
-    # Simulated database (in production, connect to real DB)
-    PRODUCT_DB = {
-        "SKU001": {
-            "name": "Red T-Shirt",
-            "category": "T-Shirt",
-            "price": 29.99,
-            "reorder_point": 10,
-            "supplier": "SUP001",
-            "lead_time": 5
-        },
-        "SKU002": {
-            "name": "Blue Jeans",
-            "category": "Jeans",
-            "price": 79.99,
-            "reorder_point": 8,
-            "supplier": "SUP001",
-            "lead_time": 7
-        },
-        "SKU003": {
-            "name": "White Sneakers",
-            "category": "Sneakers",
-            "price": 129.99,
-            "reorder_point": 5,
-            "supplier": "SUP002",
-            "lead_time": 10
-        },
-        "SKU004": {
-            "name": "Black Dress",
-            "category": "Dress",
-            "price": 99.99,
-            "reorder_point": 5,
-            "supplier": "SUP003",
-            "lead_time": 7
-        },
-        "SKU005": {
-            "name": "Winter Jacket",
-            "category": "Jacket",
-            "price": 149.99,
-            "reorder_point": 3,
-            "supplier": "SUP002",
-            "lead_time": 14
-        }
-    }
-    
-    SUPPLIER_DB = {
-        "SUP001": {
-            "name": "Fashion Wholesale Co.",
-            "contact": "+880-1712-123456",
-            "email": "orders@fashionwholesale.com",
-            "categories": ["T-Shirt", "Jeans", "Dress"],
-            "rating": 4.5,
-            "avg_lead_time": 5
-        },
-        "SUP002": {
-            "name": "Premium Apparel Ltd.",
-            "contact": "+880-1812-654321",
-            "email": "supply@premiumapparel.com",
-            "categories": ["Sneakers", "Jacket"],
-            "rating": 4.8,
-            "avg_lead_time": 10
-        },
-        "SUP003": {
-            "name": "Quick Fashion Imports",
-            "contact": "+880-1912-111222",
-            "email": "orders@quickfashion.com",
-            "categories": ["Dress", "T-Shirt"],
-            "rating": 4.2,
-            "avg_lead_time": 4
-        }
-    }
-    
-    def __init__(self, model: str = "gpt-4"):
+    def __init__(self, model: str = "gpt-4", kb_path: Optional[str] = None):
         """Initialize the inventory agent."""
+        self.kb_path = kb_path or os.path.join(
+            os.path.dirname(__file__), "../knowledge_base/products.json"
+        )
+        self.PRODUCT_DB = {}
+        self.SUPPLIER_DB = {}
+        self._load_databases()
+        
         self.llm = ChatOpenAI(
             model=model,
             temperature=0,
             api_key=os.environ.get("OPENAI_API_KEY")
         )
+        # Initialize RAG for the agent to use as a tool
+        self.rag = InventoryRAGEngine(knowledge_base_path=self.kb_path)
+        
         self.tools = self._create_tools()
         self.agent = self._create_agent()
+
+    def _load_databases(self):
+        """Load product and supplier data from JSON knowledge base."""
+        if not os.path.exists(self.kb_path):
+            print(f"⚠️ Knowledge base not found at {self.kb_path}")
+            return
+
+        try:
+            with open(self.kb_path, "r") as f:
+                data = json.load(f)
+            
+            # Map products
+            for p in data.get("products", []):
+                sku = p.get("id", "UNKNOWN")
+                self.PRODUCT_DB[sku] = {
+                    "name": p.get("name"),
+                    "category": p.get("category"),
+                    "price": p.get("base_price"),
+                    "reorder_point": p.get("reorder_point", 10),
+                    "supplier": p.get("supplier_id"),
+                    "lead_time": p.get("lead_time_days", 7)
+                }
+            
+            # Map suppliers
+            for s in data.get("suppliers", []):
+                sid = s.get("id", "UNKNOWN")
+                self.SUPPLIER_DB[sid] = {
+                    "name": s.get("name"),
+                    "contact": s.get("contact"),
+                    "email": s.get("email"),
+                    "categories": s.get("categories", []),
+                    "rating": s.get("rating"),
+                    "avg_lead_time": s.get("avg_lead_time")
+                }
+            print(f"✅ Loaded {len(self.PRODUCT_DB)} products and {len(self.SUPPLIER_DB)} suppliers into Agent.")
+        except Exception as e:
+            print(f"❌ Error loading knowledge base for Agent: {e}")
     
     def _create_tools(self) -> List[Tool]:
         """Create tools for the agent to use."""
@@ -161,6 +139,16 @@ class InventoryAgent:
                 name="calculate_reorder",
                 description="Calculate recommended reorder quantity and timing based on current stock and lead time.",
                 args_schema=ReorderInput
+            ),
+            Tool(
+                name="search_knowledge_base",
+                func=self._search_rag,
+                description="Search the inventory knowledge base for general info about products, suppliers, or the dataset itself. Use this for 'What is this about?' or 'Tell me about...' questions."
+            ),
+            Tool(
+                name="get_inventory_statistics",
+                func=lambda x: f"Total Products: {len(self.PRODUCT_DB)}. Database status: Active.",
+                description="Get high-level statistics about the dataset entries."
             ),
             Tool(
                 name="get_current_time",
@@ -253,22 +241,21 @@ Lead Time: {lead_time} days
    Estimated Cost: ${product['price'] * 0.6 * recommended_qty:.2f} (wholesale)
 """
     
+    def _search_rag(self, query: str) -> str:
+        """Use the RAG engine to find answers."""
+        result = self.rag.query(query)
+        return result.get("answer", "No info found.")
+
     def _create_agent(self) -> AgentExecutor:
         """Create the LangChain agent."""
         
         system_prompt = """You are an intelligent inventory management assistant for a retail company.
-Your role is to help manage stock levels and make smart reorder recommendations.
+Your role is to help manage stock levels and make smart reorder recommendations. 
 
-When analyzing inventory alerts:
-1. First look up the product details
-2. Find available suppliers for that category
-3. Calculate reorder recommendations
-4. Provide a clear action plan
+You have access to a 'Knowledge Base' which contains the actual dataset of products and suppliers. 
+If someone asks 'What is this dataset about?' or meta-questions, use the 'search_knowledge_base' OR 'get_inventory_statistics' tools.
 
-Be concise but thorough. Always include:
-- Current situation summary
-- Risk assessment
-- Specific action items with contact info
+You are NOT just a general AI; you are the dedicated brain of this specific Inventory System. 
 
 Format your responses for Telegram messages (use emojis, keep it scannable)."""
 
@@ -324,6 +311,14 @@ Please:
         
         result = self.agent.invoke({"input": prompt})
         return result.get("output", "Unable to process alert")
+
+    def reload(self):
+        """Reload databases from JSON knowledge base."""
+        print("🔄 Inventory Agent reloading...")
+        self.PRODUCT_DB = {}
+        self.SUPPLIER_DB = {}
+        self._load_databases()
+        print("✅ Inventory Agent reload complete.")
     
     def ask(self, question: str) -> str:
         """
@@ -359,5 +354,4 @@ if __name__ == "__main__":
         print("⚠️ Set OPENAI_API_KEY to run full test")
         
         # Test tools without LLM
-        agent_tools = InventoryAgent.PRODUCT_DB
-        print(f"\n📦 Available products: {list(agent_tools.keys())}")
+        print(f"\n📦 Available products: {list(agent.PRODUCT_DB.keys())}")

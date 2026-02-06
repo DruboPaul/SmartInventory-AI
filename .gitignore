@@ -1,6 +1,13 @@
 # Credentials
 .env
-*.json
+config.json
+
+# Databases
+chroma_db/
+*.db
+knowledge_base/
+inventory.db
+sample_data_50k.csv
 
 # Python
 __pycache__/
