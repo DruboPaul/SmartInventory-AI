@@ -17,6 +17,7 @@ pydantic
 chromadb
 tiktoken
 huggingface-hub<0.25.0
+pyaudioop
 
 # UI
 gradio>=4.44.1
