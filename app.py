@@ -1392,6 +1392,7 @@ Ready for your command..."""}
                 chatbot = gr.Chatbot(
                     value=initial_message,
                     elem_id="chatbot",
+                    type="messages",
                     label=None,
                     show_label=False,
                     avatar_images=(None, "https://api.dicebear.com/7.x/bottts/svg?seed=InventoryAI")
