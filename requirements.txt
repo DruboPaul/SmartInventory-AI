@@ -19,7 +19,7 @@ chromadb>=0.5.0
 tiktoken
 
 # UI
-gradio==4.44.1
+gradio>=5.0.0
 pandas
-# Force Rebuild V3 - Cache Buster 97812555
-huggingface-hub<0.25.0
+# Force Rebuild V4 - Cache Buster 978125559
+huggingface-hub
