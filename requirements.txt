@@ -21,5 +21,5 @@ tiktoken
 # UI
 gradio==4.44.1
 pandas
-# Force Rebuild V5 - Clean Slate
-huggingface-hub>=0.25.0
+# Force Rebuild V6 - Triple Lock
+huggingface-hub<0.25.0
