@@ -1715,7 +1715,7 @@ if __name__ == "__main__":
         initialize_ai(conf.get("openai_api_key"))
 
     demo.launch(
-        share=False, 
+        share=True, 
         server_name="0.0.0.0", 
         server_port=7860
     )
