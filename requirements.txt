@@ -20,5 +20,5 @@ huggingface-hub<0.25.0
 audioop-lts
 
 # UI
-gradio>=4.44.1
+gradio==4.44.1
 pandas
