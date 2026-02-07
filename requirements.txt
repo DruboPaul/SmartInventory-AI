@@ -7,19 +7,19 @@ python-dotenv
 requests
 
 # AI/ML Components
-langchain
-langchain-openai
-langchain-community
-openai
-pydantic<2.0.0
-gradio-client==0.6.1
+langchain>=0.3.0
+langchain-openai>=0.2.0
+langchain-community>=0.3.0
+openai>=1.40.0
+pydantic>=2.9.0
+# gradio-client managed by gradio
 
 # Vector DB (for RAG)
-chromadb
+chromadb>=0.5.0
 tiktoken
-huggingface-hub<0.25.0
+huggingface-hub>=0.25.0
 
 # UI
-gradio==3.50.2
+gradio>=4.44.1
 pandas
 # Force Rebuild

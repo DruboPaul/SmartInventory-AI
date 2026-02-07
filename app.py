@@ -1295,6 +1295,8 @@ button[title="Copy"], button[aria-label="Copy"] {
     border: 1px solid #F1F5F9 !important;
     font-size: 0.9rem !important;
 }
+
+/* Hide Security Warning Banner - REMOVED for Gradio 4 */
 """
 
 js_func = """
